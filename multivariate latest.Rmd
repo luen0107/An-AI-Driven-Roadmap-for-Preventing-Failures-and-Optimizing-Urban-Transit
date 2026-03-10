@@ -1,0 +1,194 @@
+
+```{r}
+library(readxl)
+ridership <- read_excel("C:/Users/luenx/OneDrive/Desktop/UMP/UMP/Sem 6/group project/final ridership.xlsx")
+ridership
+```
+
+```{r}
+x1 <- 'Failure RS'
+x2 <- 'Failure TNM'
+x3 <- 'Failure POW'
+x4 <- 'Failure SIG'
+x5 <- 'Relevant Failure'
+y1 <- 'Service Downtime'
+y2 <- 'Total Ridership'
+df <- ridership[c(x1, x2, x3, x4, x5, y1, y2)]
+df
+```
+```{r}
+# Replace column names
+names(df) <- c("x1", "x2", "x3","x4","x5","y1","y2")
+df
+
+```
+
+
+
+```{r}
+# Check for null values in the entire data frame
+is.na(df)
+```
+
+```{r}
+df<- na.omit(df)
+df
+```
+
+```{r}
+#Descriptive Statistics
+sapply(df,mean)  #mean
+sapply(df,sd)    #standard deviation
+sapply(df,var)   #variance
+A<-cov(df)   #variance-covariance matrix
+A
+summary(df) #other statistics
+```
+```{r}
+#Correlation matrix 
+ cormatrix<-cor(df) 
+ round(cormatrix,4)
+
+#Multiple Scatter Plot matrix
+library(car)
+scatterplotMatrix(df)
+```
+X1 vs Others: X1 shows a positive linear relationship with X3, X4, and X5, and a nonlinear trend with y1 and y2.
+X2 vs Others: X2 shows a non-linear relationship with other variables. It seems to have a distinctive behavior compared to other variables, possibly indicating some form of threshold effect or non-linear interaction.
+X3 vs Others: X3 shows a positive linear relationship with X1, X4, and X5. There is a slightly curved relationship with y1 and y2.
+X4 vs Others: X4 shows a strong positive linear relationship with X1, X3, and X5. The relationship with y1 and y2 is also positive but not as strong.
+X5 vs Others: X5 has a positive linear relationship with X1, X3, and X4. The relationships with y1 and y2 are less clear and might be non-linear.
+y1 and y2: The relationship between y1 and y2 is complex, possibly indicating an interaction or a more intricate dependency structure.
+
+
+
+
+
+```{r}
+#Multivariate Regression Model
+ y<-as.matrix(df[,6:7])
+ x<-as.matrix(df[,1:5])
+ mvlr<-lm(y~x)
+ summary(mvlr)
+```
+For Response y1,
+^y1 = -7.5563 + 0.2717x1 + 2.9839x2 + 0.3473x3 - 0.7783x4 + 17.2527x5
+
+x1 and x5 are significant variables at alpha=0.05.
+
+Based on the P-value=0.000 < 0.05, this model is significant where at least one of the independent variables related to dependent variables. 
+
+
+For Response y2,
+^y2 = 4307376 - 7671x1 - 65936x2 + 95022x3 + 16290x4 + 157459x5
+
+None of the variable is significant variables at alpha=0.05 except for intercept.
+
+Based on the P-value=0.2762 > 0.05, this model is not significant where none of the independent variables is related to the dependent variables. 
+
+
+
+
+
+
+
+```{r}
+#Multivariate Test Statistics
+ library(car)
+ mv1r1<-lm(y~x1+x2+x3+x4+x5,df)
+ Anova(mv1r1)
+```
+-Based on the result, x5 has the p-value <0.05.
+-Therefore, x5 is the significant predictor to this multivariate model.
+
+
+```{r}
+#Multivariate Test Statistics
+ library(car)
+ mv1r1<-lm(y~x1+x2+x3+x4+x5,df)
+ Anova(mv1r1)
+ mv1r2<-lm(y~x5,df)
+ anova(mv1r1,mv1r2)
+```
+-The p-value = 0.00003 < 0.05, hence it is significant.
+
+-Hence, there is enough evidence that the model with one predictor fits as well as the model with five predictors at 5% significance level.
+
+
+
+#Option 2 
+```{r}
+#Multivariate Test Statistics 
+ library(car)
+ mv1r1<-lm(y~x1+x2+x3+x4+x5,df)
+ Anova(mv1r1)
+ linearHypothesis(mv1r1,hypothesis.matrix=c("x1=0"))
+```
+-P-value of all the tests such as Pillai, Wilks, Hotelling-Lawley and Roy are not significant at 5% significant level.
+-Hence, the P-value does not provide enough evidence that the model with four predictors fits as well as the model with five predictors at 5% significance level. Thus, the model with four predictors cannot be used for prediction.
+
+^y1 = -7.556e+00 + 2.717e-01x1 - 2.984e+00x2 + 3.473e-01x3 + -7.783e-01x4 + 1.725e+01x5 
+^y2 = 4,307e+06 + 7.671e+03x1 - 6.594e+04x2 + 9.502e+04x3 + 1.629e+04x4 + 1.575e+05x5 
+
+
+
+
+```{r}
+lm(y~x1+x2+x3+x4+x5,df)
+```
+Interpretation:
+^y1 = -7.556e+00 + 2.717e-01x1 - 2.984e+00x2 + 3.473e-01x3 + -7.783e-01x4 + 1.725e+01x5 
+
+-This model can be used for prediction. 
+
+
+
+```{r}
+####model checking###
+#install.packages("car")
+
+# Load the car package
+library(car)
+
+yhat<-predict(mvlr) #predicted y
+epsilon<-residuals(mvlr)   #residuals
+cbind(yhat,epsilon)
+```
+
+
+```{r}
+scatterplotMatrix(epsilon) #Linearity
+```
+
+
+```{r}
+df<-data.frame(epsilon)   #change into data frame to construct QQ-plot (normality)
+qqPlot(df$y1)
+qqPlot(df$y2)
+```
+-Outliers exist for y1 which are 2 and 12. 
+-Outliers exist for y2 which are 7 and 16.
+
+
+```{r}
+#HOMOSCEDASTICITY / CONSTANT VARIANCE
+plot(df$y1)
+plot(df$y2)
+
+B<-cov(df)
+B 
+```
+-Homoscedasticity does not occur as the residuals are not equally distributed across the regression line.
+
+
+#EXTRA CODING
+```{r}
+#library(lmtest)
+# Fit the linear model
+#mv1r1 <- lm(y ~ x1 + x2 + x3 + x4 + x5, data = df)
+
+# Perform the Breusch-Pagan test
+#bptest(mv1r1)
+
+```
+If the p-value is small (typically less than 0.05), it suggests the presence of heteroscedasticity.
